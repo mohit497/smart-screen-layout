@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Player</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            border: 5px solid #000; /* Add border for the player */
+        }
+        .media-item {
+            position: absolute;
+            object-fit: cover; /* Ensure content fits within its zone */
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading...</div> <!-- Loading indicator -->
+    <script>
+        async function fetchLayout() {
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.layout) {
+                    try {
+                        const layout = event.data.layout;
+                        const layers = Object.keys(layout).sort(); // Sort layers by name
+                        if (layers.length === 0) throw new Error('No layers found in layout.');
+
+                        let currentLayerIndex = 0;
+
+                        function renderNextLayer() {
+                            const layerName = layers[currentLayerIndex];
+                            const layerContent = layout[layerName] || [];
+                            renderLayout(layerContent);
+
+                            // Move to the next layer or loop back to the first
+                            currentLayerIndex = (currentLayerIndex + 1) % layers.length;
+
+                            // Repeat content after a delay
+                            setTimeout(renderNextLayer, 5000); // 5 seconds delay
+                        }
+
+                        // Start rendering layers
+                        renderNextLayer();
+                    } catch (error) {
+                        console.error('Error rendering layout:', error.message);
+                    }
+                }
+            });
+        }
+
+        function renderLayout(layout) {
+            document.body.innerHTML = ''; // Clear existing content
+            layout.forEach(item => {
+                const element = document.createElement(item.type === 'text' ? 'div' : item.type === 'picture' ? 'img' : item.type);
+                element.className = 'media-item';
+                element.style.left = `${item.x || 0}px`;
+                element.style.top = `${item.y || 0}px`;
+                element.style.width = `${item.width}px`;
+                element.style.height = `${item.height}px`;
+
+                if (item.type === 'text') {
+                    element.textContent = item.text;
+                    element.style.display = 'flex';
+                    element.style.alignItems = 'center';
+                    element.style.justifyContent = 'center';
+                    element.style.fontSize = '20px'; // Adjust font size for better visibility
+                    element.style.color = '#000';
+                    element.style.backgroundColor = '#fff'; // Add background for text readability
+                } else if (item.type === 'video' || item.type === 'picture') {
+                    element.src = item.src || ''; // Ensure the src attribute is set for images and videos
+                }
+
+                document.body.appendChild(element);
+            });
+
+            // Hide loading indicator after rendering
+            const loadingIndicator = document.getElementById('loading');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        fetchLayout();
+    </script>
+</body>
+</html>

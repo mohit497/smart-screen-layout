@@ -15,12 +15,13 @@ class MediaLayoutGenerator:
         features = []
         type_mapping = {'video': 0, 'picture': 1, 'text': 2}  # Example mapping
         for obj in media_objects:
+            # Generate default duration for videos if not provided
+            duration = obj.get('duration', 60) if obj.get('type') == 'video' else 5
             feature = [
                 obj.get('width', 0),
                 obj.get('height', 0),
                 type_mapping.get(obj.get('type', 'unknown'), -1),  # -1 for unknown types
-                obj.get('duration', 5) if obj.get('type') == 'video' else 5, #added duration or 5 seconds
-                len(obj.get('text', '')) if obj.get('type') == 'text' else 0 # added text length
+                duration,  # Use the default or provided duration
             ]
             features.append(feature)
         return np.array(features)
@@ -56,7 +57,8 @@ class MediaLayoutGenerator:
         self.trained_model = rf_classifier
         return rf_classifier
 
-    def generate_layout(self, media_objects):
+    def generate_layout(self, media_objects, target_screen_width, target_screen_height):
+        layout = {}
         try:
             features = self._extract_features(media_objects)
             num_clusters = self._determine_clusters(features)
@@ -67,20 +69,31 @@ class MediaLayoutGenerator:
 
             predicted_clusters = self.trained_model.predict(features)
 
-            layout = {}
-            for i in range(num_clusters):
-                layout[f'layer{i + 1}'] = []
-
             for i, media in enumerate(media_objects):
-                layer_name = f'layer{predicted_clusters[i] + 1}'
-                media_with_time = media.copy()
-                if media.get('type') == 'video':
-                    media_with_time['display_time'] = media.get('duration', 5)
-                else:
-                    media_with_time['display_time'] = 5
-                layout[layer_name].append(media_with_time)
+                layer_index = 1
+                max_layers = 10  # Limit the number of layers to prevent infinite loops
+                while layer_index <= max_layers:
+                    layer_name = f'layer{layer_index}'
+                    if layer_name not in layout:
+                        layout[layer_name] = []
 
-            return layout
+                    # Check if media fits within the target screen size
+                    if media.get('width', 0) <= target_screen_width and media.get('height', 0) <= target_screen_height:
+                        layout[layer_name].append(media)
+                        break
+                    else:
+                        # Move to the next layer if media doesn't fit
+                        layer_index += 1
+
+                # Handle case where media cannot fit into any layer
+                if layer_index > max_layers:
+                    print(f"Warning: Media item {media} could not fit into any layer.")
+
+            # Remove empty layers
+            layout = {key: value for key, value in layout.items() if value}
+
+        except KeyError as e:
+            print(f"Error: Missing key {e} in layout generation.")
         except Exception as e:
-            print(f"Error generating layout: {e}")
-            return {}  # Return empty layout in case of error
+            print(f"Unexpected error during layout generation: {e}")
+        return layout

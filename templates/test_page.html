@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Media Layout</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            margin-top: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .player {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Media Layout Generator</h1>
+    <form id="layoutForm">
+        <div class="form-group">
+            <label for="screenWidth">Screen Width:</label>
+            <input type="number" id="screenWidth" name="screenWidth" placeholder="Enter screen width" required>
+        </div>
+        <div class="form-group">
+            <label for="screenHeight">Screen Height:</label>
+            <input type="number" id="screenHeight" name="screenHeight" placeholder="Enter screen height" required>
+        </div>
+        <div class="form-group">
+            <label for="mediaObjects">Media Objects (JSON):</label>
+            <textarea id="mediaObjects" name="mediaObjects" rows="5" placeholder='[{"type": "video", "width": 1280, "height": 720, "duration": 30}]' required></textarea>
+        </div>
+        <button type="submit">Generate Layout</button>
+    </form>
+    <div class="output">
+        <h2>Generated Layout:</h2>
+        <pre id="output"></pre>
+    </div>
+
+    <div class="player">
+        <h2>Player:</h2>
+        <iframe id="playerFrame" src="/player" style="width: 100%; height: 500px; border: none;"></iframe>
+    </div>
+
+    <script>
+        document.getElementById('layoutForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const screenWidth = document.getElementById('screenWidth').value;
+            const screenHeight = document.getElementById('screenHeight').value;
+            const mediaObjects = document.getElementById('mediaObjects').value;
+
+            try {
+                // Sanitize JSON input by removing trailing commas
+                const sanitizedMediaObjects = mediaObjects.replace(/,\s*]/g, ']');
+
+                // Validate JSON input
+                const parsedMediaObjects = JSON.parse(sanitizedMediaObjects);
+
+                const response = await fetch('/generate-layout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        screen_width: parseInt(screenWidth),
+                        screen_height: parseInt(screenHeight),
+                        media_objects: parsedMediaObjects
+                    })
+                });
+                const data = await response.json();
+
+                if (data.layout) {
+                    document.getElementById('output').textContent = JSON.stringify(data.layout, null, 2);
+
+                    // Pass the layout to the iframe
+                    const playerFrame = document.getElementById('playerFrame');
+                    playerFrame.contentWindow.postMessage({ layout: data.layout }, '*');
+                } else {
+                    document.getElementById('output').textContent = 'Error: Layout generation failed.';
+                }
+            } catch (error) {
+                document.getElementById('output').textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Listen for messages in the iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.layout) {
+                console.log('Received layout in iframe:', event.data.layout);
+            }
+        });
+    </script>
+</body>
+</html>
