@@ -14,11 +14,27 @@ def generate_layout():
         media_objects = data.get('media_objects', [])
         screen_width = data.get('screen_width', 1920)
         screen_height = data.get('screen_height', 1080)
-        target_screen_width = data.get('screen_width', 1920)
-        target_screen_height = data.get('screen_height', 1080)
+        target_screen_width = data.get('target_screen_width', 1920)
+        target_screen_height = data.get('target_screen_height', 1080)
 
         generator = MediaLayoutGenerator(screen_width, screen_height)
         layout = generator.generate_layout(media_objects, target_screen_width, target_screen_height)
+
+        # Add default x and y coordinates if missing
+        for layer, items in layout.items():
+            for item in items:
+                item.setdefault("x", 0)
+                item.setdefault("y", 0)
+
+        # Validate the generated layout
+        def validate_layout(layout):
+            for layer_name, items in layout.items():
+                total_area = sum(item["width"] * item["height"] for item in items)
+                for item in items:
+                    if item["width"] * item["height"] > total_area / 2:
+                        print(f"Warning: Large media object {item} should be in a separate layer.")
+
+        validate_layout(layout)
 
         return jsonify({"layout": layout}), 200
     except Exception as e:

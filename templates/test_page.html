@@ -57,7 +57,7 @@
         </div>
         <div class="form-group">
             <label for="mediaObjects">Media Objects (JSON):</label>
-            <textarea id="mediaObjects" name="mediaObjects" rows="5" placeholder='[{"type": "video", "width": 1280, "height": 720, "duration": 30}]' required></textarea>
+            <textarea id="mediaObjects" name="mediaObjects" rows="5" placeholder='[{"type": "video", "width": 1280, "height": 720, "duration": 30, "src": "https://videos.pexels.com/video-files/4625518/4625518-uhd_1440_2560_30fps.mp4"}, {"type": "picture", "width": 600, "height": 400, "src": "https://picsum.photos/200/300"}, {"type": "text", "width": 800, "height": 200, "text": "Hello World"}]'></textarea>
         </div>
         <button type="submit">Generate Layout</button>
     </form>
@@ -79,8 +79,8 @@
             const mediaObjects = document.getElementById('mediaObjects').value;
 
             try {
-                // Sanitize JSON input by removing trailing commas
-                const sanitizedMediaObjects = mediaObjects.replace(/,\s*]/g, ']');
+                // Trim whitespace and sanitize JSON input by removing trailing commas
+                const sanitizedMediaObjects = mediaObjects.trim().replace(/,\s*]/g, ']');
 
                 // Validate JSON input
                 const parsedMediaObjects = JSON.parse(sanitizedMediaObjects);
@@ -102,11 +102,13 @@
                     // Pass the layout to the iframe
                     const playerFrame = document.getElementById('playerFrame');
                     playerFrame.contentWindow.postMessage({ layout: data.layout }, '*');
+                } else if (data.error) {
+                    document.getElementById('output').textContent = `Error: ${data.error}`;
                 } else {
                     document.getElementById('output').textContent = 'Error: Layout generation failed.';
                 }
             } catch (error) {
-                document.getElementById('output').textContent = `Error: ${error.message}`;
+                document.getElementById('output').textContent = `Error: Invalid JSON or ${error.message}`;
             }
         });
 

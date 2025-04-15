@@ -11,11 +11,11 @@ def generate_fuzzy_media_data(num_samples=100, screen_sizes=None):
     data = []
     for _ in range(num_samples):
         screen_width, screen_height = random.choice(screen_sizes)
-        num_sections = random.randint(1, 4)  # Divide the screen into 1 to 4 sections
+        num_sections = random.randint(1, 6)  # Increase sections for more diversity
         sections = []
         for _ in range(num_sections):
-            section_width = random.randint(screen_width // 4, screen_width // 2)
-            section_height = random.randint(screen_height // 4, screen_height // 2)
+            section_width = random.randint(screen_width // 5, screen_width // 2)
+            section_height = random.randint(screen_height // 5, screen_height // 2)
             x = random.randint(0, screen_width - section_width)
             y = random.randint(0, screen_height - section_height)
             sections.append({'x': x, 'y': y, 'width': section_width, 'height': section_height})
@@ -25,7 +25,7 @@ def generate_fuzzy_media_data(num_samples=100, screen_sizes=None):
             if media_type == 'video':
                 width = random.randint(640, max(640, section['width']))
                 height = random.randint(360, max(360, section['height']))
-                duration = random.randint(5, 120)
+                duration = random.randint(5, 300)  # Increase duration range
                 data.append({
                     'type': media_type,
                     'x': section['x'],
@@ -49,7 +49,7 @@ def generate_fuzzy_media_data(num_samples=100, screen_sizes=None):
                     'screen_height': screen_height
                 })
             elif media_type == 'text':
-                text_length = random.randint(10, 200)
+                text_length = random.randint(10, 300)  # Increase text length range
                 text = ' '.join(random.choices(['lorem', 'ipsum', 'dolor', 'sit', 'amet'], k=text_length // 5))
                 data.append({
                     'type': media_type,

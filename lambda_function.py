@@ -6,6 +6,13 @@ def lambda_handler(event, context):
         media_objects = event['media_objects']
         generator = MediaLayoutGenerator(screen_width=1920, screen_height=1080)
         layout = generator.generate_layout(media_objects)
+
+        # Ensure x and y coordinates are included
+        for layer, items in layout.items():
+            for item in items:
+                item.setdefault("x", 0)
+                item.setdefault("y", 0)
+
         return {
             'statusCode': 200,
             'body': json.dumps(layout)
